@@ -4,9 +4,9 @@ use std::collections::HashMap;
 use string_template::Template;
 extern crate num_cpus;
 
-use zeromq::{Socket, SocketRecv, SocketSend};
+use zeromq::{Socket, SocketRecv, SocketSend, ZmqMessage};
 
-static mut ipc_url:&str = "";
+
 
 #[tokio::main]
 async fn main() {
@@ -52,37 +52,46 @@ async fn generate_socket(ipc_url_path:String ) {
     socket.connect(ipc_url_path.as_str()).await.expect("Failed to connect");
 
     loop {
-        let repl = socket.recv().await;
-        dbg!(repl);
+        let ipc_data = socket.recv().await;
+        match  ipc_data {
+            Ok(res) => print_zmq(res),
+            Err(err) => print!("ZMQ ERROR !"),
+        }
+        
     }
 }
 
-async fn create_zmq_pullers(num_Of_Cpus: usize) {
-    if 64 <= num_Of_Cpus {
+fn print_zmq(data : ZmqMessage){
+    let workload = String::from_utf8(data.get(0).unwrap().to_vec()).expect("Couldn't parse u64 from data");
+    println!("Data from ZMQ :: {}",workload);
+}
+
+async fn create_zmq_pullers(num_of_cpus: usize) {
+    if 64 <= num_of_cpus {
         println!("CL-->4 :: PROCESS-->8");
         create_zmq_socket(4, 8).await;
-    } else if 48 <= num_Of_Cpus && num_Of_Cpus < 64 {
+    } else if 48 <= num_of_cpus && num_of_cpus < 64 {
         println!("CL-->3 :: PROCESS-->8");
         create_zmq_socket(3, 8).await;
-    } else if 32 <= num_Of_Cpus && num_Of_Cpus < 48 {
+    } else if 32 <= num_of_cpus && num_of_cpus < 48 {
         println!("CL-->2 :: PROCESS-->8");
         create_zmq_socket(2, 8).await;
-    } else if 24 <= num_Of_Cpus && num_Of_Cpus < 32 {
+    } else if 24 <= num_of_cpus && num_of_cpus < 32 {
         println!("CL-->2 :: PROCESS-->6");
         create_zmq_socket(2, 6).await;
-    } else if 20 <= num_Of_Cpus && num_Of_Cpus < 24 {
+    } else if 20 <= num_of_cpus && num_of_cpus < 24 {
         println!("CL-->1 :: PROCESS-->9");
         create_zmq_socket(1, 9).await;
-    } else if 16 <= num_Of_Cpus && num_Of_Cpus < 20 {
+    } else if 16 <= num_of_cpus && num_of_cpus < 20 {
         println!("CL-->1 :: PROCESS-->8");
         create_zmq_socket(1, 8).await;
-    } else if 12 <= num_Of_Cpus && num_Of_Cpus < 16 {
+    } else if 12 <= num_of_cpus && num_of_cpus < 16 {
         println!("CL-->1 :: PROCESS-->6");
         create_zmq_socket(1, 6).await;
-    } else if 8 <= num_Of_Cpus && num_Of_Cpus < 12 {
+    } else if 8 <= num_of_cpus && num_of_cpus < 12 {
         println!("CL-->1 :: PROCESS-->4");
         create_zmq_socket(1, 4).await;
-    } else if 4 <= num_Of_Cpus && num_Of_Cpus < 8 {
+    } else if 4 <= num_of_cpus && num_of_cpus < 8 {
         println!("CL-->1 :: PROCESS-->2");
         create_zmq_socket(1, 2).await;
     } else {
